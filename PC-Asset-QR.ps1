@@ -19,56 +19,27 @@ else{$_.MediaType}
 
 $ip=(($nic.IPAddress|Where-Object{$_ -match '^\d+\.'}|Select-Object -First 1))
 
-$info="Manufacturer:$($cs.Manufacturer)`nModel Number:$($cs.Model)`nIP Address:$ip`nHostname:$env:COMPUTERNAME`nMAC Address:$($nic.MACAddress)`nOperating System:$($os.Caption)`nOS Version:$($os.Version)`nCPU Model:$($cpu.Name)`nCPU Cores:$($cpu.NumberOfCores)`nRAM:$ramTotal GB $ramType $ramSpeed MT/s`nStorage:$storageGB GB`nStorage Type:$storageType`nPower Status:$(if($bat){$bat.Status}else{'AC/No Battery'})`nNetwork Status:$(if($nic){'Connected'}else{'Disconnected'})"
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "          PC ASSET INFORMATION" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
 
-$js="$env:TEMP\qrcode.min.js"
-if(!(Test-Path $js)){
-Invoke-WebRequest "https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" -OutFile $js
-}
+[PSCustomObject]@{
+    "Manufacturer"    = $cs.Manufacturer
+    "Model Number"    = $cs.Model
+    "IP Address"      = $ip
+    "Hostname"        = $env:COMPUTERNAME
+    "MAC Address"     = $nic.MACAddress
+    "Operating System"= $os.Caption
+    "OS Version"      = $os.Version
+    "CPU Model"       = $cpu.Name
+    "CPU Cores"       = $cpu.NumberOfCores
+    "RAM"             = "$ramTotal GB $ramType $ramSpeed MT/s"
+    "Storage"         = "$storageGB GB"
+    "Storage Type"    = $storageType
+    "Power Status"    = if($bat){$bat.Status}else{'AC/No Battery'}
+    "Network Status"  = if($nic){'Connected'}else{'Disconnected'}
+} | Format-List
 
-$escaped=$info.Replace('\','\\').Replace('`','\`').Replace("'","\'").Replace("`r","").Replace("`n","\n")
-
-$html=@"
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>PC Asset QR</title>
-<style>
-body{font-family:Arial;text-align:center;margin-top:30px}
-#qrcode{display:inline-block;padding:20px;background:white}
-h2{margin-bottom:20px}
-button{font-size:18px;padding:10px 25px;margin-top:20px}
-</style>
-</head>
-<body>
-<h2>PC Asset QR Code</h2>
-<div id="qrcode"></div>
-<br>
-<button onclick="downloadQR()">Save QR Code</button>
-<script>
-$(Get-Content $js -Raw)
-</script>
-<script>
-var data='$escaped';
-new QRCode(document.getElementById("qrcode"),{
-text:data,
-width:600,
-height:600,
-correctLevel:QRCode.CorrectLevel.M
-});
-function downloadQR(){
-var img=document.querySelector('#qrcode img');
-var a=document.createElement('a');
-a.href=img.src;
-a.download='PC_Asset_QR.png';
-a.click();
-}
-</script>
-</body>
-</html>
-"@
-
-$file="$env:USERPROFILE\Desktop\PC_Asset_QR.html"
-$html|Set-Content $file -Encoding UTF8
-Start-Process $file
+Write-Host "========================================" -ForegroundColor Cyan
